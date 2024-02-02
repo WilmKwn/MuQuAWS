@@ -2,8 +2,7 @@ import React from 'react';
 import Youtube from 'react-youtube';
 import './App.css';
 
-const AWS = require('aws-sdk');
-const docClient = new AWS.DynamoDB.DocumentClient({region: 'us-east-2', accessKeyId: '', secretAccessKey: ''});
+import { WEBSOCKET, REST } from './Links';
 
 class App extends React.Component {
   constructor() {
@@ -13,43 +12,66 @@ class App extends React.Component {
       username: "",
       links: [],
     }
+    this.socketRef = React.createRef();
   }
 
-  async fetchData() {
-    const response = await fetch('https://1mvqarvetd.execute-api.us-east-2.amazonaws.com/dev');
-    const body = await response.json();
+  updateLinks = (items) => {
     let array = [];
-    for (let i = 0; i < body.length; i++) {
-      let data = {link: body[i].link, id: body[i].id};
+    for (let i = 0; i < items.length; i++) {
+      let data = {link: items[i].link, id: items[i].id};
       array.push(data);
     }
-    await array.sort((a,b) => a.id - b.id);
-    console.log(array);
-    this.setState({links: array});
+    array.sort((a,b) => a.id - b.id);
+    this.setState({...this.state, links: array});
   }
-  putData = async(tableName, link, id) => {
-    var params = {
-      TableName: tableName,
-      Item: {
-        'link': link,
-        'id': id,
-      }
-    }
-    docClient.put(params, function(err, data) {
-      console.log(!err ? "success" : err);
+
+  setupWebSocket() {
+    const URL = WEBSOCKET;
+    const socket = new WebSocket(URL);
+    socket.addEventListener('message', (event) => {
+      let raw = event.data;
+      let items = JSON.parse(raw).Items;
+      this.updateLinks(items);
     });
+    this.socketRef = socket;
   }
-  deleteData = async(tableName, link, id) => {
-    var params = {
-      TableName: tableName,
-      Key: {
-        'link': link,
-        'id': id
-      }
+  componentWillUnmount() {
+    if (this.socketRef && this.socketRef.readyState === WebSocket.OPEN) {
+      this.socketRef.close();
     }
-    docClient.delete(params, function(err, data) {
-      console.log(!err ? "success" : err);
-    })
+  }
+
+  fetchData = async() => {
+    var requestInit = {
+      method: 'GET',
+    }
+    const response = await fetch(REST, requestInit);
+    const bodyJSON = await response.json();
+    const body = (await JSON.parse(bodyJSON.body)).Items;
+
+    this.updateLinks(body);
+  }
+  postData = async(link, id) => {
+    var requestInit = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({"link": link, "id": id})
+    }
+    const response = await fetch(REST, requestInit);
+    console.log("POST: ", await response.json());
+  }
+  deleteData = async(link, id) => {
+    var requestInit = {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({"link": link, "id": id})
+    }
+    const response = await fetch(REST, requestInit);
+    console.log("Delete link: ", await response.json());
   }
 
   signIn() {
@@ -58,6 +80,7 @@ class App extends React.Component {
       this.setState({username:this.state.typed});
       this.setState({typed:""});
       await this.fetchData();
+      await this.setupWebSocket();
     }
     return (
       <>
@@ -75,14 +98,13 @@ class App extends React.Component {
   playLink() {
     const checkEnded = async(e) => {
       if (e.target.getPlayerState() === 0) {
-        await this.deleteData('songlinks', this.state.links[0].link, this.state.links[0].id);
-        await this.fetchData();
-        //await this.state.links.shift();
-        this.setState({typed:""});
+        await this.deleteData(this.state.links[0].link, this.state.links[0].id);
       }
     }
-    var url = this.state.links.length!==0 ? (String)(this.state.links[0].link) : "";
-    var videoId = url.substring(url.indexOf("=")+1);
+
+    let id = this.state.links.length!==0 ? this.state.links[0].id : -1;
+    let url = this.state.links.length!==0 ? (String)(this.state.links[0].link) : "";
+    let videoId = url.substring(url.indexOf("=")+1);
 
     const opts = {
       playerVars: {
@@ -92,27 +114,32 @@ class App extends React.Component {
     return (
       <div>
         <p>{url}</p>
-        <Youtube videoId={videoId} opts={opts} onStateChange={(e) => checkEnded(e)}/>
+        {this.state.links.length>0 ? <Youtube key={id} videoId={videoId} opts={opts} onStateChange={(e) => checkEnded(e)}/> : <h1>Enter something in the queue...🙏</h1>}
       </div>
     )
   }
   printSong(params) {
-    if (params.url.link === params.list[0].link) return;
     return (
       <div>
         <p>{params.url.link}</p>
       </div>
     )
   }
+
   playRoom() {
     const setLink = async(e) => {
       e.preventDefault();
       if ((String)(this.state.typed).indexOf("=") !== -1) {
-        const d = new Date();
-        await this.putData('songlinks', this.state.typed, d.getTime());
-        // let link = this.state.typed;
-        // let id = d.getTime();
-        // this.state.links.push({link,id});
+        const currentDate = new Date();
+        const year = currentDate.getFullYear().toString();
+        const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = currentDate.getDate().toString().padStart(2, '0');
+        const hours = currentDate.getHours().toString().padStart(2, '0');
+        const minutes = currentDate.getMinutes().toString().padStart(2, '0');
+        const seconds = currentDate.getSeconds().toString().padStart(2, '0');
+        const id = year + month + day + hours + minutes + seconds;
+
+        await this.postData(this.state.typed, parseInt(id));
         this.setState({typed:""});
       }
     }
@@ -129,7 +156,7 @@ class App extends React.Component {
         </div>
         <div>
           {this.playLink()}
-          {this.state.links.map(link => <this.printSong key={link.id} list={this.state.links} url={link}/>)}
+          {this.state.links.slice(1).map(link => <this.printSong key={link.id} list={this.state.links} url={link}/>)}
         </div>
       </>
     )
