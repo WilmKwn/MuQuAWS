@@ -6,6 +6,8 @@ import { fetchData, postData, deleteData } from '../globals/Crud';
 
 import { useGlobal } from '../globals/Globals';
 
+import loadingImage from '../assets/loading.gif';
+
 const Room = () => {
     const [typed, setTyped] = useState('');
     const [links, setLinks] = useState([]);
@@ -93,15 +95,15 @@ const Room = () => {
 
     const showLoading = () => {
         return (
-            <div className='z-5 w-screen h-screen flex justify-center'>
-                <p className='text-4xl'>LOADING...</p>
+            <div className='z-5 w-screen flex justify-center'>
+                <img src={loadingImage} alt='' className='w-24' />
             </div>
         )
     }
 
     return (
         <div className='w-full min-h-screen bg-purple-300 flex flex-col items-center pt-20 absolute'>
-            <h1 className='text-4xl mb-5 mt-5'>Enter Youtube Link</h1>
+            {!state.loading ? <h1 className='text-4xl mb-5 mt-5'>Enter Youtube Link</h1> : showLoading()}
             <div className='w-full text-center text-xl pb-5'>
                 <form onSubmit={setLink} className=''>
                     <input className='w-1/3 h-10 mr-1 rounded-lg pl-3' value={typed} onChange={(e) => setTyped(e.target.value)} placeHolder='Type link' />
@@ -109,7 +111,6 @@ const Room = () => {
                 </form>
             </div>
             <div className='text-center'>
-                {state.loading && showLoading()}
                 {playLink()}
                 <p className='text-2xl text-black mt-2 bg-purple-400'>In Queue:</p>
                 {links.slice(1).map((link, index) => (
