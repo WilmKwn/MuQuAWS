@@ -150,9 +150,9 @@ const Room = () => {
 
     return (
         <div className='w-full h-screen bg-purple-300 pt-20 absolute'>
-            <p className='w-full text-center text-4xl border-b-2 pb-3 bg-purple-400 font-bold'>{state.room}</p>
-            <div className='w-full min-h-screen flex justify-center '>
-                <div className='w-1/2 flex flex-col items-center '>
+            <p className='w-full absolute text-center text-4xl border-b-4 pb-3 bg-purple-400 font-bold'>{state.room}</p>
+            <div className='w-full h-full pt-16 flex justify-center'>
+                <div className='w-1/2 h-full flex flex-col items-center'>
                     {!state.loading ? <h1 className='text-4xl mb-5 mt-5'>Enter [Youbtube | Twitch] Link</h1> : showLoading()}
                     <div className='w-full text-center text-xl pb-5'>
                         <form onSubmit={setLink} className=''>
@@ -165,7 +165,7 @@ const Room = () => {
                         {playLink()}
                     </div>
                 </div>
-                <div className='w-1/3 h-screen mr-5 mt-5 text-center'>
+                <div className='w-1/3 h-full mr-5 text-center'>
                     <p className='text-2xl text-black mt-2 bg-purple-400 border-2 border-black'>In Queue:</p>
                     {links.slice(1).map((link, index) => (
                         <div className='text-xl mt-2 border-2 border-purple-600 bg-purple-100 p-1' key={index}>
