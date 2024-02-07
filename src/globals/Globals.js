@@ -2,8 +2,9 @@ import React, { createContext, useReducer, useContext } from 'react';
 
 const initalState = {
     username: '',
-    which: 'PUBLIC',
     loading: false,
+    which: 'ROOM',
+    room: 'public',
 };
 
 const GlobalContext = createContext();
@@ -13,17 +14,22 @@ const globalReducer = (state, action) => {
         case 'UPDATE_USERNAME':
             return { 
                 ...state, 
-                username: action.payload,
+                username: action.payload
             };
         case 'UPDATE_WHICH':
             return {
                 ...state,
-                which: action.payload,
+                which: action.payload
             };
         case 'UPDATE_LOADING':
             return {
                 ...state,
-                loading: action.payload,
+                loading: action.payload
+            }
+        case 'UPDATE_ROOM':
+            return {
+                ...state,
+                room: action.payload
             }
         default:
             return state;

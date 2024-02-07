@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+
 import Youtube from 'react-youtube';
+import {TwitchPlayer} from 'react-twitch-embed';
 
 import { WEBSOCKET } from '../Links';
 import { fetchData, postData, deleteData } from '../globals/Crud';
@@ -14,14 +16,24 @@ const Room = () => {
 
     const {state, dispatch} = useGlobal();
 
+    const table = 'songlinks';
+
     const updateLinks = (items) => {
         let array = [];
         for (let i = 0; i < items.length; i++) {
-            let data = {link: items[i].link, id: items[i].id};
+            let data = {link: items[i].link, id: items[i].id, room: items[i].room };
             array.push(data);
         }
-        array.sort((a,b) => a.id - b.id);
-        setLinks(array);
+
+        let temp = [];
+        array.forEach(link => {
+            if (link.room === state.room) {
+                temp.push(link);
+            }
+        });
+        temp.sort((a,b) => a.id - b.id);
+        
+        setLinks(temp);
     }
 
     useEffect(() => {
@@ -31,10 +43,13 @@ const Room = () => {
             let raw = event.data;
             let items = JSON.parse(raw).Items;
             updateLinks(items);
+            dispatch({ type: 'UPDATE_LOADING', payload: false });
         });
 
-        fetchData().then((body) => {
+        dispatch({ type: 'UPDATE_LOADING', payload: true });
+        fetchData(table).then((body) => {
             updateLinks(body);
+            dispatch({ type: 'UPDATE_LOADING', payload: false });
         });
 
         return () => {
@@ -45,36 +60,61 @@ const Room = () => {
     }, []);
 
     const playLink = () => {
+        const videoEnded = async() => {
+            dispatch({ type: 'UPDATE_LOADING', payload: true });
+            const arg = {
+                link: links[0].link, 
+                id: links[0].id,
+                room: state.room
+            }
+            await deleteData(arg, table);
+        }
         const checkEnded = async(e) => {
             if (e.target.getPlayerState() === 0) {
-                dispatch({ type: 'UPDATE_LOADING', payload: true });
-                await deleteData(links[0].link, links[0].id);
-                dispatch({ type: 'UPDATE_LOADING', payload: false });
+                videoEnded(e);
             }
+        }
+        const typeOfLink = (type, videoId, id) => {
+            const opts = {
+                playerVars: {
+                    autoplay: 1,
+                }
+            }
+            switch (type) {
+                case 'youtube':
+                    return <Youtube key={id} videoId={videoId} opts={opts} onStateChange={(e) => checkEnded(e)}/>
+                case 'twitch':
+                    return <TwitchPlayer key={id} video={videoId} autoplay={true} muted={false} width={600} height={400} onEnded={() => videoEnded()} />
+                default:
+                    return <></>
+            };
         }
 
         let id = links.length!==0 ? links[0].id : -1;
         let url = links.length!==0 ? (String)(links[0].link) : "";
-        let videoId = url.substring(url.indexOf("=")+1);
 
-        const opts = {
-            playerVars: {
-            autoplay: 1,
-            }
+        let type;
+        let videoId;
+        if (url.indexOf('youtube') !== -1) {
+            type = 'youtube';
+            videoId = url.substring(url.indexOf("=")+1);
+        } else {
+            type = 'twitch';
+            videoId = url.substring(url.indexOf('videos/')+7);
         }
+
         return (
             <div className=''>
                 <p className='text-xl text-center bg-green-100 mb-2 p-2 rounded-xl'>{url}</p>
-                {links.length>0 ? <Youtube className='' key={id} videoId={videoId} opts={opts} onStateChange={(e) => checkEnded(e)}/> 
-                : 
-                <h1 className='text-lg font-bold'>Enter something in the queue...🙏</h1>}
+                {links.length>0 && typeOfLink(type, videoId, id)}
             </div>
         )
     }
 
     const setLink = async(e) => {
         e.preventDefault();
-        if ((String)(typed).indexOf("=") !== -1) {
+        
+        if ((String)(typed).indexOf("https://www.") !== -1) {
             dispatch({ type: 'UPDATE_LOADING', payload: true });
 
             const currentDate = new Date();
@@ -86,9 +126,12 @@ const Room = () => {
             const seconds = currentDate.getSeconds().toString().padStart(2, '0');
             const id = year + month + day + hours + minutes + seconds;
 
-            await postData(typed, parseInt(id));
-
-            dispatch({ type: 'UPDATE_LOADING', payload: false });
+            const arg = {
+                link: typed, 
+                id: parseInt(id),
+                room: state.room
+            }
+            await postData(arg, table);
             setTyped("");
         }
     }
@@ -96,31 +139,40 @@ const Room = () => {
     const showLoading = () => {
         return (
             <div className='z-5 w-screen flex justify-center'>
-                <img src={loadingImage} alt='' className='w-24' />
+                <img src={loadingImage} alt='' className='w-20' />
             </div>
         )
     }
 
-    return (
-        <div className='w-full min-h-screen bg-purple-300 flex flex-col items-center pt-20 absolute'>
-            {!state.loading ? <h1 className='text-4xl mb-5 mt-5'>Enter Youtube Link</h1> : showLoading()}
-            <div className='w-full text-center text-xl pb-5'>
-                <form onSubmit={setLink} className=''>
-                    <input className='w-1/3 h-10 mr-1 rounded-lg pl-3' value={typed} onChange={(e) => setTyped(e.target.value)} placeHolder='Type link' />
-                    <button className='h-10 rounded-lg bg-gray-300 px-10' type="submit">Play</button>
-                </form>
-            </div>
-            <div className='text-center'>
-                {playLink()}
-                <p className='text-2xl text-black mt-2 bg-purple-400'>In Queue:</p>
-                {links.slice(1).map((link, index) => (
-                    <div className='text-xl mt-2 border-2 border-purple-600 bg-purple-100 p-1' key={index}>
-                        <p>{link.link}</p>
-                    </div>
-                ))}
-            </div>
-            <div className='h-10'>
+    const upload = () => {
+        alert("WOW");
+    }
 
+    return (
+        <div className='w-full h-screen bg-purple-300 pt-20 absolute'>
+            <p className='w-full text-center text-4xl border-b-2 pb-3 bg-purple-400 font-bold'>{state.room}</p>
+            <div className='w-full min-h-screen flex justify-center '>
+                <div className='w-1/2 flex flex-col items-center '>
+                    {!state.loading ? <h1 className='text-4xl mb-5 mt-5'>Enter [Youbtube | Twitch] Link</h1> : showLoading()}
+                    <div className='w-full text-center text-xl pb-5'>
+                        <form onSubmit={setLink} className=''>
+                            <input className='w-1/2 h-10 mr-1 rounded-lg pl-3 border-2 border-black' value={typed} onChange={(e) => setTyped(e.target.value)} placeholder='Type link' />
+                            <button className='h-10 rounded-lg bg-gray-300 px-10 mr-1 border-2 border-black hover:scale-105 duration-100' type="submit">Play</button>
+                            <button className='h-10 rounded-lg bg-gray-300 px-7 border-2 border-black hover:scale-105 duration-100' onClick={()=>{upload()}}>Upload</button>
+                        </form>
+                    </div>
+                    <div className='text-center'>
+                        {playLink()}
+                    </div>
+                </div>
+                <div className='w-1/3 h-screen mr-5 mt-5 text-center'>
+                    <p className='text-2xl text-black mt-2 bg-purple-400 border-2 border-black'>In Queue:</p>
+                    {links.slice(1).map((link, index) => (
+                        <div className='text-xl mt-2 border-2 border-purple-600 bg-purple-100 p-1' key={index}>
+                            <p>{link.link}</p>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     )

@@ -13,12 +13,14 @@ const App = () => {
 
   const render = () => {
     switch (state.which) {
-      case 'PUBLIC':
+      case 'ROOM':
         return <Room />
       case 'PRIVATE':
         return <PrivateHome />
       case 'PROFILE':
         return <Profile />
+      default:
+        return (<></>)
     }
   }
 
