@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 
 import Youtube from 'react-youtube';
 import {TwitchPlayer} from 'react-twitch-embed';
@@ -9,6 +9,10 @@ import { fetchData, postData, deleteData } from '../globals/Crud';
 import { useGlobal } from '../globals/Globals';
 
 import loadingImage from '../assets/loading.gif';
+
+const MemoizedTwitchPlayer = memo(TwitchPlayer, (prevProps, nextProps) => {
+    return prevProps.video === nextProps.video;
+});
 
 const Room = () => {
     const [typed, setTyped] = useState('');
@@ -84,7 +88,7 @@ const Room = () => {
                 case 'youtube':
                     return <Youtube key={id} videoId={videoId} opts={opts} onStateChange={(e) => checkEnded(e)}/>
                 case 'twitch':
-                    return <TwitchPlayer key={id} video={videoId} autoplay={true} muted={false} width={600} height={400} onEnded={() => videoEnded()} />
+                    return <MemoizedTwitchPlayer key={id} video={videoId} autoplay={true} muted={false} width={600} height={400} onEnded={() => videoEnded()} />
                 default:
                     return <></>
             };
@@ -100,7 +104,13 @@ const Room = () => {
             videoId = url.substring(url.indexOf("=")+1);
         } else {
             type = 'twitch';
-            videoId = url.substring(url.indexOf('videos/')+7);
+            let startIndex = url.indexOf('videos/')
+            if (startIndex === -1) {
+                startIndex = url.indexOf('-') + 1;
+            } else {
+                startIndex += 7
+            }
+            videoId = url.substring(startIndex);
         }
 
         return (

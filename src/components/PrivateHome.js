@@ -34,7 +34,7 @@ const PrivateHome = () => {
 
         dispatch({ type: 'UPDATE_LOADING', payload: true });
         fetchData('private-rooms').then((body) => {
-            setRooms(body)
+            setRooms(body);
             dispatch({ type: 'UPDATE_LOADING', payload: false });
         });
 
@@ -103,7 +103,6 @@ const PrivateHome = () => {
         setCurrIndex(index);
     }
     const clickOnDelete = async(e, index) => {
-        e.preventDefault();
         const arg = {
             link: rooms[index].name, 
             id: rooms[index].creator
@@ -124,7 +123,7 @@ const PrivateHome = () => {
                             <p key={index} className='text-xl p-3'>{name}</p>
                             {password!=='' && password!==undefined && <img src={lockImage} alt='' className='w-7 h-7 mt-3' />}
                         </div>
-                        {creator===state.username && <button onClick={(e)=>{clickOnDelete(e, index)}} key={index} className='z-20 bg-red-400 p-1 rounded-lg'>delete</button>}
+                        {creator===state.username && <button onClick={(e)=>{clickOnDelete(e, index); e.stopPropagation()}} key={index} className='z-20 bg-red-400 p-1 rounded-lg'>delete</button>}
                     </div>
                 ))}
                 {showPassword && !state.loading && (

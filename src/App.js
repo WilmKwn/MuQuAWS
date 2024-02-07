@@ -4,7 +4,6 @@ import Room from './components/Room';
 import Login from './components/Login';
 import Navbar from './components/Navbar';
 import PrivateHome from './components/PrivateHome';
-import Profile from './components/Profile';
 
 import { useGlobal } from './globals/Globals';
 
@@ -17,8 +16,6 @@ const App = () => {
         return <Room />
       case 'PRIVATE':
         return <PrivateHome />
-      case 'PROFILE':
-        return <Profile />
       default:
         return (<></>)
     }

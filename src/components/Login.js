@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { useGlobal } from '../globals/Globals';
+import { fetchData, postData } from '../globals/Crud';
 
 import muquImage from '../assets/muqu.png';
 
@@ -18,13 +19,45 @@ const Login = () => {
 
         if (isLogin) {
             if (username!=='' && password!=='') {
-                // check db
-                dispatch({ type: 'UPDATE_USERNAME', payload: username });
+                fetchData('users').then((body) => {
+                    const users = body;
+
+                    const user = users.find(user => user.username === username);
+                    if (user !== undefined) {
+                        if (user.password === password) {
+                            dispatch({ type: 'UPDATE_USERNAME', payload: username });
+                            dispatch({ type: 'UPDATE_WHICH', payload: 'ROOM' });
+                            dispatch({ type: 'UPDATE_ROOM', payload: 'public' });
+                        } else {
+                            alert("Wrong password");
+                        }
+                    } else {
+                        alert("Account does not exist");
+                    }
+                });
             }
         } else {
-            if (username!=='' && password!=='' && password===password2) {
-                // check db
-                dispatch({ type: 'UPDATE_USERNAME', payload: username });
+            if (username!=='' && password!=='') {
+                fetchData('users').then((body) => {
+                    const users = body;
+                    if (users.some(user => user.username === username)) {
+                        alert("User already exists");
+                    } else {
+                        if (password === password2) {
+                            const args = {
+                                link: username,
+                                id: password
+                            }
+                            postData(args, 'users').then(() => {
+                                dispatch({ type: 'UPDATE_USERNAME', payload: username });
+                                dispatch({ type: 'UPDATE_WHICH', payload: 'ROOM' });
+                                dispatch({ type: 'UPDATE_ROOM', payload: 'public' });
+                            });
+                        } else {
+                            alert("Passwords mismatch");
+                        }
+                    }
+                });
             }
         }
     }
@@ -39,8 +72,12 @@ const Login = () => {
                     { !isLogin && (
                         <input onChange={(e) => {setPassword2(e.target.value)}} type='text' placeholder='Confirm password' className='w-full h-30 mb-3 p-4 rounded-md bg-gray-100' />
                     )}
-                    <button type='submit' name='submit' className='mb-2 p-3 rounded-xl bg-gray-400 text-gray-800 text-xl'>{isLogin ? 'Log In' : 'Sign Up'}</button>
-                    <button onClick={() => {setIsLogin(!isLogin)}} className='text-md w-auto hover:scale-105 duration-200'>Don't have an account</button>
+                    <button type='submit' name='submit' className='mb-2 p-3 rounded-xl bg-gray-400 text-gray-800 text-xl'>
+                        {isLogin ? 'Log In' : 'Sign Up'}
+                    </button>
+                    <button onClick={() => {setIsLogin(!isLogin)}} type='button' className='text-md w-auto hover:scale-105 duration-200'>
+                        {isLogin ? "Don't have an account?" : "Already have an account?"}
+                    </button>
                 </form>
             </div>
         </div>
