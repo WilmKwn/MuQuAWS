@@ -1,9 +1,10 @@
 import React, { memo, useEffect, useState } from 'react';
+import aws from 'aws-sdk';
 
 import Youtube from 'react-youtube';
 import {TwitchPlayer} from 'react-twitch-embed';
 
-import { WEBSOCKET } from '../Links';
+import { WEBSOCKET, s3_data } from '../Links';
 import { fetchData, postData, deleteData } from '../globals/Crud';
 
 import { useGlobal } from '../globals/Globals';
@@ -21,6 +22,13 @@ const Room = () => {
     const {state, dispatch} = useGlobal();
 
     const table = 'songlinks';
+
+    const s3 = new aws.S3({
+        region: s3_data.S3_REGION,
+        accessKeyId: s3_data.S3_ACCESS_KEY,
+        secretAccessKey: s3_data.S3_SECRET_KEY,
+        signatureVersion: 'v4'
+    });
 
     const updateLinks = (items) => {
         let array = [];
@@ -64,6 +72,20 @@ const Room = () => {
     }, []);
 
     const playLink = () => {
+        const fileEnded = async() => {
+            videoEnded();
+            const params = {
+                Bucket: s3_data.S3_NAME,
+                Key: `${links[0].id}`
+            };
+            await s3.deleteObject(params, (err) => {
+                if (err) {
+                    console.log(err.message);
+                } else {
+                    console.log("successfully deleted");
+                }
+            });
+        }
         const videoEnded = async() => {
             dispatch({ type: 'UPDATE_LOADING', payload: true });
             const arg = {
@@ -89,6 +111,13 @@ const Room = () => {
                     return <Youtube key={id} videoId={videoId} opts={opts} onStateChange={(e) => checkEnded(e)}/>
                 case 'twitch':
                     return <MemoizedTwitchPlayer key={id} video={videoId} autoplay={true} muted={false} width={600} height={400} onEnded={() => videoEnded()} />
+                case 's3_audio':
+                    console.log(videoId);
+                    return (
+                        <audio key={id} controls autoPlay={true} onEnded={() => fileEnded()}>
+                            <source src={videoId} type="audio/mpeg"/>
+                        </audio>
+                    );
                 default:
                     return <></>
             };
@@ -102,7 +131,7 @@ const Room = () => {
         if (url.indexOf('youtube') !== -1) {
             type = 'youtube';
             videoId = url.substring(url.indexOf("=")+1);
-        } else {
+        } else if (url.indexOf('twitch') !== -1) {
             type = 'twitch';
             let startIndex = url.indexOf('videos/')
             if (startIndex === -1) {
@@ -111,6 +140,11 @@ const Room = () => {
                 startIndex += 7
             }
             videoId = url.substring(startIndex);
+        } else {
+            if (url.indexOf('mp3') !== -1) type = 's3_audio';
+            else type = 's3_video';
+
+            videoId = `https://${s3_data.S3_NAME}.s3.${s3_data.S3_REGION}.amazonaws.com/${id}`;
         }
 
         return (
@@ -121,20 +155,24 @@ const Room = () => {
         )
     }
 
+    const createId = () => {
+        const currentDate = new Date();
+        const year = currentDate.getFullYear().toString();
+        const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = currentDate.getDate().toString().padStart(2, '0');
+        const hours = currentDate.getHours().toString().padStart(2, '0');
+        const minutes = currentDate.getMinutes().toString().padStart(2, '0');
+        const seconds = currentDate.getSeconds().toString().padStart(2, '0');
+        return year + month + day + hours + minutes + seconds;
+    }
+
     const setLink = async(e) => {
         e.preventDefault();
         
         if ((String)(typed).indexOf("https://www.") !== -1) {
             dispatch({ type: 'UPDATE_LOADING', payload: true });
 
-            const currentDate = new Date();
-            const year = currentDate.getFullYear().toString();
-            const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-            const day = currentDate.getDate().toString().padStart(2, '0');
-            const hours = currentDate.getHours().toString().padStart(2, '0');
-            const minutes = currentDate.getMinutes().toString().padStart(2, '0');
-            const seconds = currentDate.getSeconds().toString().padStart(2, '0');
-            const id = year + month + day + hours + minutes + seconds;
+            const id = createId();
 
             const arg = {
                 link: typed, 
@@ -154,8 +192,30 @@ const Room = () => {
         )
     }
 
-    const upload = () => {
-        alert("WOW");
+    const upload = async(e) => {
+        const file = e.target.files[0];
+
+        const id = createId();
+        const params = ({
+            Bucket: s3_data.S3_NAME,
+            Key: id,
+            Expires: 60,
+        });
+
+        dispatch({ type: 'UPDATE_LOADING', payload: true });
+        const url = await s3.getSignedUrlPromise('putObject', params);
+
+        await fetch(url, {
+            method: "PUT",
+            body: file
+        });
+
+        const arg = {
+            link: file.name, 
+            id: parseInt(id),
+            room: state.room
+        }
+        await postData(arg, table);
     }
 
     return (
@@ -163,12 +223,15 @@ const Room = () => {
             <p className='w-full absolute text-center text-4xl border-b-4 pb-3 bg-purple-400 font-bold'>{state.room}</p>
             <div className='w-full h-full pt-16 flex justify-center'>
                 <div className='w-1/2 h-full flex flex-col items-center'>
-                    {!state.loading ? <h1 className='text-4xl mb-5 mt-5'>Enter [Youbtube | Twitch] Link</h1> : showLoading()}
-                    <div className='w-full text-center text-xl pb-5'>
-                        <form onSubmit={setLink} className=''>
-                            <input className='w-1/2 h-10 mr-1 rounded-lg pl-3 border-2 border-black' value={typed} onChange={(e) => setTyped(e.target.value)} placeholder='Type link' />
-                            <button className='h-10 rounded-lg bg-gray-300 px-10 mr-1 border-2 border-black hover:scale-105 duration-100' type="submit">Play</button>
-                            <button className='h-10 rounded-lg bg-gray-300 px-7 border-2 border-black hover:scale-105 duration-100' onClick={()=>{upload()}}>Upload</button>
+                    {!state.loading ? <h1 className='text-4xl mb-5 mt-5'>Enter [YouTube | Twitch] Link</h1> : showLoading()}
+                    <div className='w-full text-xl pb-5 flex justify-center'>
+                        <form onSubmit={setLink} className='w-4/5 flex'>
+                            <input className='w-full h-10 mr-1 rounded-lg pl-3 border-2 border-black' value={typed} onChange={(e) => setTyped(e.target.value)} placeholder='Type link' />
+                            <button className='h-10 rounded-lg bg-gray-300 px-6 mr-1 border-2 border-black hover:scale-105 duration-100' type="submit">Queue</button>
+                        </form>
+                        <form className='flex items-center'>
+                            <input type='file' accept="audio/mp3" id='fileInput' className='hidden' onChange={upload} />
+                            <label htmlFor='fileInput' className='h-10 rounded-lg bg-gray-300 px-6 pt-1 border-2 border-black hover:scale-105 duration-100 cursor-pointer'>Upload</label>
                         </form>
                     </div>
                     <div className='text-center'>

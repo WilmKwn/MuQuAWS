@@ -4,6 +4,7 @@ import { useGlobal } from '../globals/Globals';
 import { fetchData, postData } from '../globals/Crud';
 
 import muquImage from '../assets/muqu.png';
+import loadingImage from '../assets/loading.gif';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -12,22 +13,23 @@ const Login = () => {
 
     const [isLogin, setIsLogin] = useState(true);
 
-    const { dispatch } = useGlobal();
+    const { state, dispatch } = useGlobal();
 
     const submitted = (e) => {
         e.preventDefault();
 
         if (isLogin) {
             if (username!=='' && password!=='') {
+                dispatch({ type: 'UPDATE_LOADING', payload: true });
                 fetchData('users').then((body) => {
+                    dispatch({ type: 'UPDATE_LOADING', payload: false });
                     const users = body;
-
+                    
                     const user = users.find(user => user.username === username);
                     if (user !== undefined) {
                         if (user.password === password) {
                             dispatch({ type: 'UPDATE_USERNAME', payload: username });
-                            dispatch({ type: 'UPDATE_WHICH', payload: 'ROOM' });
-                            dispatch({ type: 'UPDATE_ROOM', payload: 'public' });
+                            dispatch({ type: 'UPDATE_WHICH', payload: 'PRIVATE' });
                         } else {
                             alert("Wrong password");
                         }
@@ -38,7 +40,9 @@ const Login = () => {
             }
         } else {
             if (username!=='' && password!=='') {
+                dispatch({ type: 'UPDATE_LOADING', payload: true });
                 fetchData('users').then((body) => {
+                    dispatch({ type: 'UPDATE_LOADING', payload: false });
                     const users = body;
                     if (users.some(user => user.username === username)) {
                         alert("User already exists");
@@ -48,10 +52,12 @@ const Login = () => {
                                 link: username,
                                 id: password
                             }
+                            dispatch({ type: 'UPDATE_LOADING', payload: true });
                             postData(args, 'users').then(() => {
+                                dispatch({ type: 'UPDATE_LOADING', payload: false });
+
                                 dispatch({ type: 'UPDATE_USERNAME', payload: username });
-                                dispatch({ type: 'UPDATE_WHICH', payload: 'ROOM' });
-                                dispatch({ type: 'UPDATE_ROOM', payload: 'public' });
+                                dispatch({ type: 'UPDATE_WHICH', payload: 'PRIVATE' });
                             });
                         } else {
                             alert("Passwords mismatch");
@@ -65,6 +71,7 @@ const Login = () => {
     return (
         <div className='w-full h-screen flex flex-col items-center bg-gradient-to-b from-purple-200 to-purple-400 text-center'>
             <img src={muquImage} alt='' className='w-1/4 mb-10 mt-20 rounded-3xl' />
+            {state.loading && <img src={loadingImage} alt='' className='w-20 mb-10' />}
             <div className='w-1/3 h-screen justify-center'>
                 <form onSubmit={(e) => submitted(e)} className='flex flex-col w-full text-black'>
                     <input onChange={(e) => {setUsername(e.target.value)}} type='text' placeholder='Enter username' className='w-full h-30 mb-3 p-4 rounded-md bg-gray-100' />
