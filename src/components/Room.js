@@ -112,11 +112,16 @@ const Room = () => {
                 case 'twitch':
                     return <MemoizedTwitchPlayer key={id} video={videoId} autoplay={true} muted={false} width={600} height={400} onEnded={() => videoEnded()} />
                 case 's3_audio':
-                    console.log(videoId);
                     return (
                         <audio key={id} controls autoPlay={true} onEnded={() => fileEnded()}>
                             <source src={videoId} type="audio/mpeg"/>
                         </audio>
+                    );
+                case 's3_video':
+                    return (
+                        <video key={id} controls autoPlay={true} onEnded={() => fileEnded()}>
+                            <source src={videoId} type="audio/mpeg"/>
+                        </video>
                     );
                 default:
                     return <></>
