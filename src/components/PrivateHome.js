@@ -27,13 +27,13 @@ const PrivateHome = () => {
         const socket = new WebSocket(URL);
         socket.addEventListener('message', (event) => {
             let raw = event.data;
-            let items = JSON.parse(raw).Items;
+            let items = JSON.parse(raw).data;
             setRooms(items);
             dispatch({ type: 'UPDATE_LOADING', payload: false });
         });
 
         dispatch({ type: 'UPDATE_LOADING', payload: true });
-        fetchData('private-rooms').then((body) => {
+        fetchData('muqu_rooms').then((body) => {
             setRooms(body);
             dispatch({ type: 'UPDATE_LOADING', payload: false });
         });
@@ -61,7 +61,7 @@ const PrivateHome = () => {
                 password: argPassword
             };
             dispatch({ type: 'UPDATE_LOADING', payload: true });
-            postData(arg, 'private-rooms');
+            postData(arg, 'muqu_rooms');
             setIsCreate(false);
         } else {
             alert("ROOM NAME ALREADY EXISTS!!");
@@ -108,7 +108,7 @@ const PrivateHome = () => {
             id: rooms[index].creator
         }
         dispatch({ type: 'UPDATE_LOADING', payload: true });
-        await deleteData(arg, 'private-rooms');
+        await deleteData(arg, 'muqu_rooms');
         setShowPassword(false);
     }
 

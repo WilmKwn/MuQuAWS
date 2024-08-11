@@ -3,7 +3,9 @@
 # dependencies
 /node_modules
 
-Links.js
+/src/Links.js
+
+/backend/.terraform
 
 # production
 /build

@@ -21,7 +21,7 @@ const Login = () => {
         if (isLogin) {
             if (username!=='' && password!=='') {
                 dispatch({ type: 'UPDATE_LOADING', payload: true });
-                fetchData('users').then((body) => {
+                fetchData('muqu_users').then((body) => {
                     dispatch({ type: 'UPDATE_LOADING', payload: false });
                     const users = body;
                     
@@ -41,7 +41,7 @@ const Login = () => {
         } else {
             if (username!=='' && password!=='') {
                 dispatch({ type: 'UPDATE_LOADING', payload: true });
-                fetchData('users').then((body) => {
+                fetchData('muqu_users').then((body) => {
                     dispatch({ type: 'UPDATE_LOADING', payload: false });
                     const users = body;
                     if (users.some(user => user.username === username)) {
@@ -53,7 +53,7 @@ const Login = () => {
                                 id: password
                             }
                             dispatch({ type: 'UPDATE_LOADING', payload: true });
-                            postData(args, 'users').then(() => {
+                            postData(args, 'muqu_users').then(() => {
                                 dispatch({ type: 'UPDATE_LOADING', payload: false });
 
                                 dispatch({ type: 'UPDATE_USERNAME', payload: username });

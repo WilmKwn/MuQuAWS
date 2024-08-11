@@ -11,6 +11,13 @@ import { useGlobal } from '../globals/Globals';
 
 import loadingImage from '../assets/loading.gif';
 
+const s3 = new aws.S3({
+    region: s3_data.S3_REGION,
+    accessKeyId: s3_data.S3_ACCESS_KEY,
+    secretAccessKey: s3_data.S3_SECRET_KEY,
+    signatureVersion: 'v4'
+});
+
 const MemoizedTwitchPlayer = memo(TwitchPlayer, (prevProps, nextProps) => {
     return prevProps.video === nextProps.video;
 });
@@ -21,14 +28,7 @@ const Room = () => {
 
     const {state, dispatch} = useGlobal();
 
-    const table = 'songlinks';
-
-    const s3 = new aws.S3({
-        region: s3_data.S3_REGION,
-        accessKeyId: s3_data.S3_ACCESS_KEY,
-        secretAccessKey: s3_data.S3_SECRET_KEY,
-        signatureVersion: 'v4'
-    });
+    const table = 'muqu_links';
 
     const updateLinks = (items) => {
         let array = [];
@@ -53,7 +53,7 @@ const Room = () => {
         const socket = new WebSocket(URL);
         socket.addEventListener('message', (event) => {
             let raw = event.data;
-            let items = JSON.parse(raw).Items;
+            let items = JSON.parse(raw).data;
             updateLinks(items);
             dispatch({ type: 'UPDATE_LOADING', payload: false });
         });
@@ -146,7 +146,7 @@ const Room = () => {
             }
             videoId = url.substring(startIndex);
         } else {
-            if (url.indexOf('mp3') !== -1) type = 's3_audio';
+            if (url.indexOf('.mp3') !== -1) type = 's3_audio';
             else type = 's3_video';
 
             videoId = `https://${s3_data.S3_NAME}.s3.${s3_data.S3_REGION}.amazonaws.com/${id}`;
@@ -181,7 +181,7 @@ const Room = () => {
 
             const arg = {
                 link: typed, 
-                id: parseInt(id),
+                id: id,
                 room: state.room
             }
             await postData(arg, table);
