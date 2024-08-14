@@ -34,7 +34,10 @@ Create an AWS account. Make sure to use AWS CLI to configure the credentials on 
 go into `/backend`
 
 Deploy backend:
-`terraform apply`
+1. go into `/backend/lambda`
+2. run `function_zip.ps1`
+3. go back to `/backend`
+4. run `terraform apply`
 
 Create a `Links.js` file in the ROOT DIRECTORY! (process.env is better but I opted to using a simple js file)
 ```
@@ -51,3 +54,5 @@ export const s3_data = {
 };
 ```
 In all the lambda files, make sure to replace all the hardcoded websocket urls with YOUR urls!
+
+Run the deploy steps 1-4 again
