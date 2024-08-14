@@ -2,6 +2,11 @@
 
 An application used to be able to queue videos or songs and sync it across users in separate "rooms"
 
+* Login / Sign Up
+* Create rooms (password or no-password)
+* Enter rooms
+* Queue videos (YouTube, Twitch, custom files)
+
 ## Project Screen Shot(s)
 
 ![image](https://github.com/user-attachments/assets/610d25fd-c942-405c-99f6-4a6717df1ee9)
