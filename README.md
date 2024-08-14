@@ -38,7 +38,7 @@ Deploy backend:
 `terraform apply`
 
 Create a `Links.js` file (process.env is better but I opted to using a simple js file)
-`
+```
 export const WEBSOCKET = '/* links websocket URL */';
 export const WBSOCKET_PRIVATE = '/* rooms websocket URL */';
 
@@ -50,5 +50,5 @@ export const s3_data = {
     S3_ACCESS_KEY: '', // your access_key
     S3_SECRET_KEY: '' // your secret_key
 };
-`
+```
 In all the lambda files, make sure to replace all the hardcoded websocket urls with YOUR urls!
