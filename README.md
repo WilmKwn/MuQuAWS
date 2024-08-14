@@ -10,6 +10,9 @@ An application used to be able to queue videos or songs and sync it across users
 ## Project Screen Shot(s)
 
 ![image](https://github.com/user-attachments/assets/610d25fd-c942-405c-99f6-4a6717df1ee9)
+![image](https://github.com/user-attachments/assets/685f0687-83e4-4f4b-8007-cd8676b1dd77)
+![image](https://github.com/user-attachments/assets/ef30df88-3324-46af-b782-f63fc91f50e3)
+
 
 [ PRETEND OTHER SCREEN SHOT IS HERE ]
 
