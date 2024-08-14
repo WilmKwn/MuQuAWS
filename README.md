@@ -14,11 +14,11 @@ An application used to be able to queue videos or songs and sync it across users
 <img src="https://github.com/user-attachments/assets/ef30df88-3324-46af-b782-f63fc91f50e3" width="750" height="auto">
 
 ## Tech Stack
-#Frontend
+# Frontend
 * React.js
 * Tailwind CSS
 
-#Backend
+# Backend
 * AWS API Gateway (REST + WebSocket)
 * AWS Lambda
 * AWS DynamoDB
