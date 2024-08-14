@@ -37,7 +37,7 @@ go into `/backend`
 Deploy backend:
 `terraform apply`
 
-Create a `Links.js` file (process.env is better but I opted to using a simple js file)
+Create a `Links.js` file in the ROOT DIRECTORY! (process.env is better but I opted to using a simple js file)
 ```
 export const WEBSOCKET = '/* links websocket URL */';
 export const WBSOCKET_PRIVATE = '/* rooms websocket URL */';
